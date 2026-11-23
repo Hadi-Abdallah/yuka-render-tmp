@@ -2,16 +2,30 @@ name: render
 on: {push: {branches: [render-video]}, workflow_dispatch: {}}
 permissions: {contents: read}
 jobs:
+  blender:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - run: |
+          F=blender-5.3.0-linux-x64.tar.xz; U=https://download.blender.org/release/Blender5.3
+          curl -sSfL --retry 5 --retry-all-errors $U/blender-5.3.0.sha256 | grep $F > sum
+          for k in 1 2 3 4 5 6 7 8; do curl -sSfL -C - --retry 3 --retry-all-errors -o $F $U/$F && sha256sum -c sum && break; sleep 10; done
+          sha256sum -c sum
+      - uses: actions/upload-artifact@v4
+        with: {name: blender, path: "*.tar.xz", retention-days: 2, compression-level: 0}
   keys:
+    needs: blender
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy: {fail-fast: false, matrix: {job: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]}}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: blender}
       - run: |
           sudo apt-get update -q && sudo apt-get install -yq ffmpeg libxrender1 libxi6 libxkbcommon0 libgl1 libegl1 libsm6 libxxf86vm1 libxfixes3
           mkdir -p screen && ffmpeg -v error -i screen.mp4 -start_number 0 -q:v 1 -qmin 1 screen/%04d.jpg
-          curl -sSfL https://download.blender.org/release/Blender5.3/blender-5.3.0-linux-x64.tar.xz | tar xJ
+          tar xJf blender-5.3.0-linux-x64.tar.xz
           ./blender-5.3.0-linux-x64/blender -b scene.blend -P render.py -- ${{ matrix.job }} 16
       - uses: actions/upload-artifact@v4
         with: {name: "keys-${{ matrix.job }}", path: new/, retention-days: 3}
