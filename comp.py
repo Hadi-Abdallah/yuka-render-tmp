@@ -67,13 +67,19 @@ def frame(i):
     else: im = A
     # ---- crisp screen, supersampled
     s = cv2.imread(S+'screen/%04d.jpg' % i)[..., ::-1]; sh, sw = s.shape[:2]
-    pts = np.array([lo+lx*x+ly*y+lz*.0135 for x, y in QX]); uv, _ = project(cams[i], pts.astype(np.float32)); uv = uv+.5
+    pts = np.array([lo+lx*x+ly*y+lz*.0128 for x, y in QX]); uv, _ = project(cams[i], pts.astype(np.float32)); uv = uv+.5
     SS = 2
     Hm = cv2.getPerspectiveTransform(np.float32([[0, 0], [sw, 0], [sw, sh], [0, sh]]), np.float32(uv*SS))
     big = cv2.warpPerspective(s, Hm, (WW*SS, HH*SS), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
     m = cv2.warpPerspective(np.full((sh, sw), 255, np.uint8), Hm, (WW*SS, HH*SS), flags=cv2.INTER_LINEAR)
     sc = cv2.resize(s2l(big/255.), (WW, HH), interpolation=cv2.INTER_AREA); mk = cv2.resize(m/255., (WW, HH), interpolation=cv2.INTER_AREA).astype(np.float32)[..., None]
-    sc = sc*.95*np.array([1.0, .975, .975], np.float32)
+    u_ = np.linspace(-1, 1, sw, dtype=np.float32); v_ = np.linspace(-1, 1, sh, dtype=np.float32)
+    ex = (1-abs(u_))*sw/2; ey = (1-abs(v_))*sh/2
+    sx_ = 1-.62*np.exp(-ex/9)-.16*np.exp(-ex/70); sy_ = 1-.62*np.exp(-ey/9)-.16*np.exp(-ey/70); sy_[:sh//2] -= .16*np.exp(-ey[:sh//2]/26)
+    shd = np.clip(sy_[:, None]*sx_[None], 0, 1)*(1-.10*(u_[None]**2)-.07*(v_[:, None]**2))
+    shw = cv2.warpPerspective(shd, Hm, (WW*SS, HH*SS), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE); sc = sc*cv2.resize(shw, (WW, HH), interpolation=cv2.INTER_AREA)[..., None]
+    sc = cv2.GaussianBlur(sc, (0, 0), .55)
+    sc = sc*.84*np.array([1.0, .975, .975], np.float32)
     # the rendered plate holds its own (older) screen: pull the bezel over its fringe, then lay the clean one in
     mko = cv2.dilate(mk[..., 0], np.ones((7, 7)))[..., None]
     ring = (mko > .01) & (mk < .999); bez = np.array([.0035, .0006, .0008], np.float32)
@@ -86,8 +92,12 @@ def frame(i):
     im = im*vig[..., None]
     im = np.where(im > .8, .8+.2*np.tanh((im-.8)/.2), im)
     o = np.where(im < .0031308, im*12.92, 1.055*np.power(np.clip(im, 1e-8, None), 1/2.4)-.055)
-    o = o+(o-cv2.GaussianBlur(o, (0, 0), 1.1))*.22*mk
-    L = o.mean(-1, keepdims=True); o = o+(grain[(i*5) % 12] if i % 2 else grain[(i*5) % 12][::-1])[..., None]*.011*(1-.75*np.clip(L, 0, 1))
+    o = o+(o-cv2.GaussianBlur(o, (0, 0), 1.1))*.05*mk
+    # lens: slight lateral colour and edge softness
+    k_ = 1.0011; cx_, cy_ = WW/2, HH/2
+    Mr = np.float32([[k_, 0, cx_*(1-k_)], [0, k_, cy_*(1-k_)]]); Mb = np.float32([[2-k_, 0, cx_*(k_-1)], [0, 2-k_, cy_*(k_-1)]])
+    o = o.astype(np.float32); o = np.stack([cv2.warpAffine(o[..., 0], Mr, (WW, HH), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE), o[..., 1], cv2.warpAffine(o[..., 2], Mb, (WW, HH), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)], -1)
+    L = o.mean(-1, keepdims=True); o = o+(grain[(i*5) % 12] if i % 2 else grain[(i*5) % 12][::-1])[..., None]*.019*(1-.65*np.clip(L, 0, 1))
     return (np.clip(o, 0, 1)*255+.5).astype(np.uint8)
 if __name__ == '__main__':
     if sys.argv[1] == 'test':

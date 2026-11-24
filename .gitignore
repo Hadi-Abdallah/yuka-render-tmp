@@ -2,3 +2,5 @@ screen/
 new/
 test*.png
 __pycache__/
+rend_v1/
+rend/
