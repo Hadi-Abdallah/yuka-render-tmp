@@ -9,8 +9,8 @@ Env: LEFT=none, MUGV=1..4, PCT, SPP, BORDER=x0,x1,y0,y1 (crop render), SAVE=1 (w
 render.yml.txt is the 20-job GitHub Actions render (put it at .github/workflows/render.yml on a branch called mix-video together with pk/room.blend, render.py, seg.py, post2.py, tone.py, phone.mp4, laptop.mp4). It has not run yet. Ask the owner before starting it, and remind them to make the repo private when it finishes.
 ## Open items
 1. Used-mug option: owner chooses. 1 light smudges, 2 smudges + fine scratches + worn lip (recommended), 3 adds dried drip + desk ring, 4 most worn.
-2. Palm and finger marks on the laptop deck (handled() in room2.py, sh/deck): first test was too faint, strengthened. Must catch light as the camera moves, not look dirty.
-3. Webcam strip: black glossy pill, all-black toggle, dark lens ring. Nothing light coloured.
+2. Palm and finger marks: checked, good.
+3. Webcam strip: checked, made fully dark.
 4. SAVE=1, start the render, deliver.
 Approved, do not change: books, no plant, trackpad position, mug size, coffee traces, warm shelf light, camera move.
 Send progress images often; keep usage economical.
