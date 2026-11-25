@@ -12,7 +12,7 @@ render.yml.txt is the 20-job GitHub Actions render (put it at .github/workflows/
 2. Palm and finger marks: checked, good.
 3. Webcam strip: checked, made fully dark.
 3b. Laptop lid looked like it floated over the base (separate glowing hinge bar under the bezel). Fixed in room2.py: lid has a hinge cover going down into the base across the hinge span; old hinge bar hidden. Small gaps at the outer ends are kept (owner: those are normal).
-4. pk/room.blend built (LEFT=none MUGV=4 SAVE=1), test frames 10 and 324 from it via render.py look right (~100 s/frame on 4 cores). Next: owner says yes, then start the render and deliver.
+4. pk/room.blend built (LEFT=none MUGV=4 SAVE=1), test frames 10 and 324 from it via render.py look right (~100 s/frame on 4 cores). Rendered on branch mix-video (run 45566520384, ~1h50 incl. slow runners), FINAL-VIDEO delivered 2026-11-25 (27 s, 648 frames, 1080x1920). Owner reminded to make the repo private.
 Note: cropped EXRs (BORDER) read as black through ffmpeg; load them in Blender instead. Full frames are fine.
 Approved, do not change: books, no plant, trackpad position, mug size, coffee traces, warm shelf light.
 Camera move: owner asked for a seamless loop. Path now ends at rest on the opening pose (frame 648 == frame 0); phone close-up key moved 24.6 -> 22.8 s; shake fades into its start over the last 3 s; screen band step is 2*pi*22/648 so it loops too. Screen recordings themselves do not loop (empty cup -> finished drink).
