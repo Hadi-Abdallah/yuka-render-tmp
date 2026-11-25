@@ -1,0 +1,476 @@
+<title>Passion P-Side Showroom</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112..125,500..900&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one dark showroom page; each category is a full-bleed stage with the product card docked inside it. Single dark look by choice. */
+:root {
+  --ink: #0e0c0b;          /* showroom black, warm */
+  --ink-2: #191513;
+  --paper: #efe8de;        /* label card white */
+  --muted: #a59b90;
+  --line: rgba(239, 232, 222, .14);
+  --brass: #c79f63;        /* from the rail */
+  --brass-ink: #1a1209;
+  --glass: rgba(18, 15, 13, .62);
+  --f-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+html { background: var(--ink); }
+body { background: var(--ink); color: var(--paper); font: 400 15px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1280px; margin: 0 auto; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ink); }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: rgba(14, 12, 11, .86); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.bar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; }
+.logo { display: flex; flex-direction: column; line-height: 1; text-decoration: none; }
+.logo b { font: 900 19px/1 var(--f-display); font-stretch: 125%; letter-spacing: .02em; }
+.logo span { font: 500 9.5px/1 var(--f-mono); letter-spacing: .22em; color: var(--muted); margin-top: 5px; text-transform: uppercase; }
+.nav { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.nav a { text-decoration: none; font: 600 12px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; padding: 9px 11px; border-radius: 999px; color: var(--muted); }
+.nav a:hover, .nav a.on { color: var(--paper); background: rgba(239, 232, 222, .08); }
+
+.intro .wrap { padding-block: 34px 26px; display: grid; gap: 14px; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .22em; text-transform: uppercase; color: var(--brass); }
+h1 { margin: 0; font: 800 clamp(34px, 7.4vw, 76px)/.95 var(--f-display); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.01em; text-wrap: balance; }
+.intro p { margin: 0; max-width: 56ch; color: var(--muted); font-size: 16px; }
+
+.cat { padding-block: 8px 26px; }
+.cat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 18px 12px; }
+h2 { margin: 0; font: 800 clamp(26px, 4.6vw, 44px)/1 var(--f-display); font-stretch: 125%; text-transform: uppercase; }
+.cat-head p { margin: 0; color: var(--muted); font: 500 12px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+
+.stage { position: relative; width: 100%; height: min(80svh, 760px); min-height: 520px; overflow: hidden; background: #000 center / cover no-repeat; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+@media (min-width: 900px) { .stage { height: auto; aspect-ratio: 16 / 9; max-height: 84vh; min-height: 0; } }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.stage.drag canvas { cursor: grabbing; }
+.stage .veil { position: absolute; inset: auto 0 0 0; height: 46%; background: linear-gradient(to top, rgba(8, 7, 6, .82), rgba(8, 7, 6, 0)); pointer-events: none; }
+.loading { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); font: 500 11px/1 var(--f-mono); letter-spacing: .2em; text-transform: uppercase; color: rgba(239, 232, 222, .7); pointer-events: none; transition: opacity .4s; }
+.stage.ready .loading { opacity: 0; }
+
+.hint { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; pointer-events: none; transition: opacity .6s; white-space: nowrap; }
+.hint i { display: inline-block; width: 22px; height: 2px; background: var(--brass); border-radius: 2px; animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge { 0%, 100% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+.stage.touched .hint { opacity: 0; }
+
+.arrow { position: absolute; top: 44%; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; place-items: center; cursor: pointer; }
+.arrow:hover { border-color: var(--brass); }
+.arrow svg { width: 18px; height: 18px; }
+.arrow.prev { left: max(16px, env(safe-area-inset-left, 0px)); }
+.arrow.next { right: max(16px, env(safe-area-inset-right, 0px)); }
+@media (hover: hover) and (min-width: 700px) { .arrow { display: grid; } }
+
+.card { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px max(16px, env(safe-area-inset-right, 0px)) 18px max(16px, env(safe-area-inset-left, 0px)); display: grid; gap: 12px; }
+@media (min-width: 900px) { .card { left: max(24px, env(safe-area-inset-left, 0px)); right: auto; bottom: 24px; width: 380px; padding: 18px 18px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); } }
+.card .row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.card h3 { margin: 0; font: 700 20px/1.15 var(--f-body); letter-spacing: -.01em; min-width: 0; }
+.card .sub { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.price { font: 500 18px/1.1 var(--f-mono); color: var(--paper); white-space: nowrap; }
+.price small { font-size: 11px; color: var(--muted); margin-left: 3px; }
+.sizes { display: flex; gap: 6px; flex-wrap: wrap; }
+.sizes button { min-width: 42px; height: 34px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(239, 232, 222, .04); font: 500 12.5px/1 var(--f-mono); cursor: pointer; }
+.sizes button[aria-pressed="true"] { border-color: var(--brass); background: rgba(199, 159, 99, .16); color: var(--paper); }
+.acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { height: 44px; border-radius: 10px; border: 1px solid var(--line); background: rgba(239, 232, 222, .06); font: 700 13px/1 var(--f-body); letter-spacing: .02em; cursor: pointer; }
+.btn.main { background: var(--brass); color: var(--brass-ink); border-color: var(--brass); }
+.btn:hover { filter: brightness(1.08); }
+.count { font: 500 11px/1 var(--f-mono); letter-spacing: .14em; color: var(--muted); }
+
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; z-index: 20; max-width: min(92vw, 460px); padding: 12px 16px; border-radius: 12px; background: var(--paper); color: var(--ink); font: 600 13.5px/1.4 var(--f-body); transition: .35s; pointer-events: none; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+.how .wrap { padding-block: 40px 30px; display: grid; gap: 18px; border-top: 1px solid var(--line); }
+.how h2 { font-size: clamp(22px, 3.6vw, 34px); }
+.how > .wrap > p { margin: 0; color: var(--muted); max-width: 60ch; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .steps { grid-template-columns: 1fr 1fr 1fr; gap: 6px; } }
+.steps figure { margin: 0; display: grid; gap: 8px; min-width: 0; }
+.steps .im { aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--ink-2); display: grid; place-items: center; border: 1px solid var(--line); }
+.steps .im img { width: 100%; height: 100%; object-fit: contain; }
+.steps .cut { background: repeating-conic-gradient(#2a2420 0 25%, #221d1a 0 50%) 0 0 / 18px 18px; }
+.steps figcaption { font: 500 11px/1.4 var(--f-mono); letter-spacing: .06em; color: var(--muted); }
+.steps figcaption b { color: var(--paper); font-weight: 500; display: block; letter-spacing: .12em; text-transform: uppercase; }
+.foot .wrap { padding-block: 22px 40px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+
+@media (prefers-reduced-motion: reduce) { .hint i { animation: none; } .toast { transition: none; } }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Passion P-Side, back to top"><b>PASSION</b><span>P-Side · House of Fashion</span></a>
+    <nav class="nav" aria-label="Sections"><a href="#tops">Tops</a><a href="#bottoms">Bottoms</a><a href="#shoes">Shoes</a></nav>
+  </div>
+</header>
+
+<section class="intro" id="top">
+  <div class="wrap">
+    <div class="eyebrow">Men's fashion store · Showroom</div>
+    <h1>Walk the rails</h1>
+    <p>Slide the jackets along the brass rail, flip through the trousers, and turn around the shoe room. Pick a size and reserve it to try on in store.</p>
+  </div>
+</section>
+
+<section class="cat" id="tops" aria-labelledby="h-tops">
+  <div class="wrap cat-head"><h2 id="h-tops">Tops</h2><p>Jackets · Shirts · Tees</p></div>
+  <div class="stage" data-kind="rail" data-scene="tops" style="background-image:url(plates/tops_small.jpg)">
+    <div class="loading">Hanging the rail</div>
+    <div class="veil"></div>
+    <div class="hint"><i></i>Drag the rail</div>
+    <button class="arrow prev" aria-label="Previous piece"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="arrow next" aria-label="Next piece"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
+    <div class="card" aria-live="polite"></div>
+  </div>
+</section>
+
+<section class="cat" id="bottoms" aria-labelledby="h-bottoms">
+  <div class="wrap cat-head"><h2 id="h-bottoms">Bottoms</h2><p>Jeans · Trousers</p></div>
+  <div class="stage" data-kind="rail" data-scene="bottoms" style="background-image:url(plates/bottoms_small.jpg)">
+    <div class="loading">Hanging the rail</div>
+    <div class="veil"></div>
+    <div class="hint"><i></i>Drag the rail</div>
+    <button class="arrow prev" aria-label="Previous piece"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="arrow next" aria-label="Next piece"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
+    <div class="card" aria-live="polite"></div>
+  </div>
+</section>
+
+<section class="cat" id="shoes" aria-labelledby="h-shoes">
+  <div class="wrap cat-head"><h2 id="h-shoes">Shoes</h2><p>The shoe room · Swipe to turn</p></div>
+  <div class="stage" data-kind="room" data-scene="shoes" style="background-image:url(plates/shoes_small.jpg)">
+    <div class="loading">Lighting the room</div>
+    <div class="veil"></div>
+    <div class="hint"><i></i>Swipe to turn</div>
+    <button class="arrow prev" aria-label="Previous pair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="arrow next" aria-label="Next pair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5l7 7-7 7"/></svg></button>
+    <div class="card" aria-live="polite"></div>
+  </div>
+</section>
+
+<section class="how">
+  <div class="wrap">
+    <div class="eyebrow">For the shop owner</div>
+    <h2>One normal photo per piece</h2>
+    <p>Upload the photo you already take for Instagram. The site cuts the piece out, reads its folds and volume, and hangs it on the right rail or plinth by itself. Nothing is drawn or invented by AI; it is your own photo, placed in the room.</p>
+    <div class="steps">
+      <figure><div class="im"><img src="how/photo.jpg" alt="Original phone photo of a chambray shirt on a hanger against a grey wall" loading="lazy"></div><figcaption><b>1 · Upload</b>Any plain photo</figcaption></figure>
+      <figure><div class="im cut"><img src="items/top_shirt.webp" alt="The same shirt cut out from its background" loading="lazy"></div><figcaption><b>2 · Cut out</b>Automatic, free</figcaption></figure>
+      <figure><div class="im"><img src="how/relief.jpg" alt="Grey relief map showing the shirt's volume" loading="lazy"></div><figcaption><b>3 · Volume</b>Folds become 3D</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>Demo for Passion P-Side. Products shown are sample photos (Unsplash, CC0 archives), not the shop's stock; prices and sizes are placeholders.</span>
+    <span>Rooms rendered in Blender, products placed live in WebGL.</span>
+  </div>
+</footer>
+
+<div class="toast" role="status" aria-live="polite"></div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const toastEl = document.querySelector('.toast'); let tt;
+function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('on'), 3200); }
+
+const ITEMS = await (await fetch('items.json')).json();
+const META = {};
+for (const s of ['tops', 'bottoms', 'shoes']) META[s] = await (await fetch('plates/' + s + '.json')).json();
+const b2t = (v) => new THREE.Vector3(v[0], v[2], -v[1]);   // Blender (z up) -> three (y up)
+
+const loader = new THREE.TextureLoader();
+const texCache = {};
+function tex(url, srgb = true) {
+  if (!texCache[url]) texCache[url] = new Promise((res, rej) => loader.load(url, t => { if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; res(t); }, undefined, rej));
+  return texCache[url];
+}
+
+// ---- product material: the photo, pushed out by its relief map and lightly re-shaded by the room light
+const itemVS = `
+uniform sampler2D dep; uniform float disp; varying vec2 vUv; varying vec3 vView; varying float vD; varying vec3 vNx; varying vec3 vNy; varying vec3 vNz;
+void main(){ vUv = uv; vNx = normalMatrix * vec3(1.,0.,0.); vNy = normalMatrix * vec3(0.,1.,0.); vNz = normalMatrix * vec3(0.,0.,1.); float d = texture2D(dep, uv).r; vD = d; vec3 p = position; p.z += d * disp;
+  vec4 mv = modelViewMatrix * vec4(p, 1.0); vView = -mv.xyz; gl_Position = projectionMatrix * mv; }`;
+const itemFS = `
+uniform sampler2D map; uniform sampler2D dep; uniform float disp; uniform vec2 size; uniform vec3 L; uniform vec3 tint; uniform float amb; uniform float dim;
+varying vec2 vUv; varying vec3 vView; varying float vD; varying vec3 vNx; varying vec3 vNy; varying vec3 vNz;
+void main(){
+  vec4 c = texture2D(map, vUv); if (c.a < .42) discard;
+  float t = 1.5 / 512.0;
+  float dx = texture2D(dep, vUv + vec2(t, 0.)).r - texture2D(dep, vUv - vec2(t, 0.)).r;
+  float dy = texture2D(dep, vUv + vec2(0., t)).r - texture2D(dep, vUv - vec2(0., t)).r;
+  vec3 n = normalize(vec3(-dx * disp / (2. * t * size.x), -dy * disp / (2. * t * size.y), 1.0));
+  n = normalize(vNx * n.x + vNy * n.y + vNz * n.z); vec3 l = normalize(L);
+  float dif = max(dot(n, l), 0.0); float rim = smoothstep(0.0, 0.22, vD);
+  vec3 col = c.rgb * tint * (amb + (1.0 - amb) * dif * 1.25) * mix(.72, 1.0, rim) * dim;
+  gl_FragColor = vec4(col, 1.0);
+  #include <colorspace_fragment>
+}`;
+function itemMaterial(map, dep, w, h, disp, L, tint, amb) {
+  return new THREE.ShaderMaterial({ uniforms: { map: { value: map }, dep: { value: dep }, disp: { value: disp }, size: { value: new THREE.Vector2(w, h) }, L: { value: L }, tint: { value: new THREE.Color(...tint) }, amb: { value: amb }, dim: { value: 1 } }, vertexShader: itemVS, fragmentShader: itemFS, side: THREE.DoubleSide });
+}
+// soft shadow the piece throws on the wall: its own silhouette, heavily blurred via the mip chain
+const shadowFS = `uniform sampler2D map; uniform float op; uniform float blur; varying vec2 vUv;
+void main(){ vec2 q = (vUv - .5) * 1.5 + .5; float m = smoothstep(0., .08, q.x) * smoothstep(0., .08, 1. - q.x) * smoothstep(0., .08, q.y) * smoothstep(0., .08, 1. - q.y);
+  float a = texture2D(map, clamp(q, 0., 1.), blur).a * m; gl_FragColor = vec4(0., 0., 0., a * op); }`;
+const plainVS = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+
+function makeRenderer(stage) {
+  const r = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.NoToneMapping; r.autoClear = false;
+  r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); stage.prepend(r.domElement); return r;
+}
+
+// ---- shared card
+function fillCard(stage, it, idx, total, sel) {
+  const card = stage.querySelector('.card');
+  const sizes = it.sizes.map(s => `<button type="button" aria-pressed="${s === sel ? 'true' : 'false'}" data-s="${s}">${s}</button>`).join('');
+  card.innerHTML = `<div class="row"><div style="min-width:0"><div class="count">${String(idx + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</div><h3>${it.name}</h3><p class="sub">${it.sub}</p></div><div class="price">$${it.price}<small>USD</small></div></div>
+  <div class="sizes" role="group" aria-label="Size">${sizes}</div>
+  <div class="acts"><button class="btn main" type="button" data-a="reserve">Reserve to try on</button><button class="btn" type="button" data-a="ask">Ask on WhatsApp</button></div>`;
+  card.onclick = (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.s) { card.querySelectorAll('.sizes button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); stage._size = b.dataset.s; return; }
+    const sz = stage._size;
+    if (b.dataset.a === 'reserve') toast(sz ? `${it.name}, size ${sz}: in the live site this goes to the shop on WhatsApp and waits on a fitting rail with your name.` : 'Pick a size first.');
+    else toast(`In the live site this opens WhatsApp with “${it.name}${sz ? ', size ' + sz : ''}” already typed.`);
+  };
+}
+
+// ---- drag helper (horizontal), with velocity
+function dragger(stage, onMove, onEnd) {
+  const cv = stage.querySelector('canvas'); let x0 = null, last = 0, lt = 0, v = 0, moved = false;
+  cv.addEventListener('pointerdown', e => { stage._px = e.offsetX / cv.clientWidth; stage._py = e.offsetY / cv.clientHeight; x0 = e.clientX; last = e.clientX; lt = performance.now(); v = 0; moved = false; stage.classList.add('drag'); cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => { stage._px = e.offsetX / cv.clientWidth; stage._py = e.offsetY / cv.clientHeight; if (x0 === null) return;
+    const t = performance.now(), dx = e.clientX - last; if (Math.abs(e.clientX - x0) > 4) { moved = true; stage.classList.add('touched'); }
+    v = .8 * v + .2 * (dx / Math.max(1, t - lt)); last = e.clientX; lt = t; onMove(dx); });
+  const up = (e) => { if (x0 === null) return; x0 = null; stage.classList.remove('drag'); onEnd(v, moved); if (e.pointerType !== 'mouse') stage._px = stage._py = null; };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('pointerleave', () => { stage._px = null; });
+}
+
+// ======================= RAIL =======================
+async function railStage(stage) {
+  const scene = stage.dataset.scene, M = META[scene], isTop = scene === 'tops';
+  const list = ITEMS.filter(i => i.cat === (isTop ? 'top' : 'bottom'));
+  const R = makeRenderer(stage); const cv = R.domElement;
+  const cam = new THREE.PerspectiveCamera(M.fov, 1, .05, 60); cam.position.copy(b2t(M.cam)); cam.lookAt(b2t(M.target));
+  const plate = await tex('plates/' + scene + '.jpg'); plate.anisotropy = 1;
+  const bgScene = new THREE.Scene(), bgCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: plate, depthWrite: false, depthTest: false })));
+  const sc = new THREE.Scene();
+  const railY = M.rail.z + .0145, railZ = -M.rail.y, railX = M.rail.x - .12;
+  // light direction for re-shading (roughly from the ceiling spots, in view space) and room tint
+  const L = new THREE.Vector3(isTop ? .15 : -.55, .75, .55);
+  const tint = isTop ? [1.0, .90, .80] : [1.0, .96, .91], amb = isTop ? .62 : .70;
+  const wood = new THREE.MeshStandardMaterial({ color: 0x5a3a22, roughness: .45, metalness: 0 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0x18181a, roughness: .35, metalness: .9 });
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xb9b3aa, roughness: .22, metalness: 1 });
+  sc.add(new THREE.HemisphereLight(isTop ? 0xffd9b0 : 0xf2efe9, 0x2a2018, isTop ? 1.1 : 1.6));
+  const key = new THREE.DirectionalLight(isTop ? 0xffd2a0 : 0xffffff, isTop ? 2.2 : 2.6); key.position.set(isTop ? .3 : -3, 4, 3); sc.add(key);
+
+  function hookMesh(mat) {   // wire hook that wraps over the rail
+    const pts = []; for (let a = 200; a >= -40; a -= 10) { const r = a * Math.PI / 180; pts.push(new THREE.Vector3(0, .019 * Math.sin(r) - .0145, .019 * Math.cos(r))); }
+    pts.push(new THREE.Vector3(0, -.05, .008), new THREE.Vector3(0, -.085, 0));
+    return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, .0028, 8), mat);
+  }
+  const G = [];
+  const S = isTop ? .68 : .54;   // spacing on the rail (m)
+  for (const it of list) {
+    const [map, dep] = await Promise.all([tex('items/' + it.id + '.webp'), tex('items/' + it.id + '_depth.png', false)]);
+    map.generateMipmaps = true; map.minFilter = THREE.LinearMipmapLinearFilter;
+    let w, h; if (isTop) { w = it.aspect > .95 ? .66 : .58; h = w / it.aspect; } else { h = 1.0; w = h * it.aspect; if (w > .5) { w = .5; h = w / it.aspect; } }
+    const pivot = new THREE.Group(); sc.add(pivot);
+    const geo = new THREE.PlaneGeometry(w, h, 96, Math.round(96 * h / w));
+    const disp = isTop ? .07 : .045;
+    const mat = itemMaterial(map, dep, w, h, disp, L, tint, amb);
+    const m = new THREE.Mesh(geo, mat); pivot.add(m);
+    let top = 0;
+    if (it.hook) { m.position.set((.5 - it.anchor[0]) * w, -h / 2 + it.anchor[1] * h - .006, 0); }
+    else if (isTop) {
+      const hk = hookMesh(chrome); pivot.add(hk);
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(.009, .009, w * .62, 16), wood); bar.rotation.z = Math.PI / 2; bar.position.set(0, -.10, -.012); pivot.add(bar);
+      top = -.095; m.position.set(0, top - h / 2, 0);
+    } else {
+      const hk = hookMesh(chrome); pivot.add(hk);
+      const bw = Math.max(.30, w * .92);
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(bw, .012, .012), steel); bar.position.set(0, -.092, 0); pivot.add(bar);
+      for (const s of [-1, 1]) { const clip = new THREE.Mesh(new THREE.BoxGeometry(.028, .05, .03), steel); clip.position.set(s * bw * .42, -.115, .006); pivot.add(clip); }
+      top = -.122; m.position.set(0, top - h / 2, 0);
+    }
+    // wall shadow
+    const sm = new THREE.ShaderMaterial({ uniforms: { map: { value: map }, op: { value: isTop ? .55 : .38 }, blur: { value: isTop ? 3.6 : 4.4 } }, vertexShader: plainVS, fragmentShader: shadowFS, transparent: true, depthWrite: false });
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.5, h * 1.5), sm); sh.renderOrder = -1; sc.add(sh);
+    G.push({ it, pivot, m, sh, w, h, top, ang: 0, av: 0, yaw: 0, mat });
+  }
+  stage.classList.add('ready');
+
+  let pos = Math.floor((list.length - 1) / 2), target = pos, vel = 0, lastIdx = -1, W = 1, H = 1, ppm = 300, visible = false, prevPos = pos, xc = 0;
+  function resize() {
+    W = stage.clientWidth; H = stage.clientHeight; R.setSize(W, H, false);
+    const k = 3.8 / (W < H ? 2.2 : 2.05);
+    const Sz = Math.max(W, H * k); cam.aspect = 1; cam.clearViewOffset(); cam.updateProjectionMatrix();
+    const f = new THREE.Vector3(0, isTop ? 1.38 : 1.18, 0).project(cam); const py = (1 - (f.y * .5 + .5)) * Sz;
+    const fx = (Sz - W) / 2, fy = Math.min(Math.max(py - H * (W < H ? .40 : .5), 0), Sz - H);
+    cam.setViewOffset(Sz, Sz, fx, fy, W, H); cam.updateProjectionMatrix();
+    plate.repeat.set(W / Sz, H / Sz); plate.offset.set(fx / Sz, 1 - (fy + H) / Sz);
+    const a = new THREE.Vector3(0, railY, railZ).project(cam), b = new THREE.Vector3(1, railY, railZ).project(cam); ppm = (b.x - a.x) * .5 * W;
+    // on wide screens the card sits at the left, so centre the rail in the space to its right
+    xc = W >= 900 ? ((.6 - .5) * 2) / (b.x - a.x) : 0;
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+  dragger(stage, dx => { pos -= dx / (ppm * S); target = pos; }, (v, moved) => {
+    const fling = -v * 1000 / (ppm * S) * .22; target = Math.round(Math.min(Math.max(pos + fling, 0), list.length - 1));
+    if (!moved && stage._px != null) { /* tap: jump to the tapped side */ const side = stage._px < .33 ? -1 : stage._px > .67 ? 1 : 0; target = Math.min(Math.max(Math.round(pos) + side, 0), list.length - 1); }
+  });
+  stage.querySelector('.prev').onclick = () => { target = Math.max(0, Math.round(target) - 1); stage.classList.add('touched'); };
+  stage.querySelector('.next').onclick = () => { target = Math.min(list.length - 1, Math.round(target) + 1); stage.classList.add('touched'); };
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible) loop.last = performance.now(); }, { rootMargin: '120px' }).observe(stage);
+
+  const NEAR = 2.15;   // pieces further than this from the centre are pushed together at the rail ends
+  function place(d) {
+    const ad = Math.abs(d), s = Math.sign(d);
+    if (ad <= NEAR) return { x: d * S, yaw: 0, z: 0 };
+    const e = ad - NEAR, k = Math.min(e, 1);
+    return { x: s * (NEAR * S + (k * S * .35) + Math.max(0, e - 1) * .06), yaw: -s * 1.15 * (k * k * (3 - 2 * k)), z: -.02 * k };
+  }
+  const loop = { last: performance.now() };
+  function frame(now) {
+    requestAnimationFrame(frame); if (!visible) return;
+    const dt = Math.min(.05, (now - loop.last) / 1000); loop.last = now;
+    if (!stage.classList.contains('drag')) { const f = 1 - Math.exp(-dt * 9); pos += (target - pos) * f; }
+    vel = (pos - prevPos) / Math.max(dt, 1e-3); prevPos = pos;
+    const idx = Math.round(Math.min(Math.max(pos, 0), list.length - 1));
+    if (idx !== lastIdx) { lastIdx = idx; stage._size = null; fillCard(stage, list[idx], idx, list.length, null); }
+    const t = now / 1000;
+    for (let i = 0; i < G.length; i++) {
+      const g = G[i], d = i - pos, p = place(d);
+      const x = Math.max(-railX, Math.min(railX, p.x + xc));
+      // swing: driven by how fast the rail moves, springs back
+      const force = -vel * (isTop ? .055 : .045);
+      g.av += (-70 * g.ang - 7 * g.av + force * 60) * dt; g.ang += g.av * dt; g.ang = Math.max(-.35, Math.min(.35, g.ang));
+      let yaw = p.yaw;
+      if (Math.abs(d) < .5) {   // the piece in front turns gently to show its volume
+        const hov = stage._px != null && !stage.classList.contains('drag') ? (stage._px - .5) * .7 : 0;
+        const idle = RM ? 0 : Math.sin(t * .7 + i) * .09;
+        g.yaw += ((hov || idle) * (1 - Math.abs(d) * 2) - g.yaw) * (1 - Math.exp(-dt * 4)); yaw += g.yaw;
+      } else g.yaw *= .9;
+      g.pivot.position.set(x, railY, railZ + p.z); g.pivot.rotation.set(0, yaw, g.ang + (RM ? 0 : Math.sin(t * 1.3 + i * 1.7) * .006));
+      // shadow on the wall, below and away from the light
+      const c = Math.cos(yaw);
+      g.sh.scale.set(Math.max(.15, Math.abs(c)) * 1.06, 1.05, 1);
+      const cx = g.pivot.position.x + Math.sin(g.ang) * (-g.top + g.h / 2) * -1;
+      g.sh.position.set(cx + (isTop ? .03 : .22), railY + g.top - g.h / 2 - (isTop ? .30 : .16), isTop ? .03 : .004); g.sh.rotation.z = g.ang;
+      g.sh.material.uniforms.op.value = (isTop ? .5 : .34) * (Math.abs(d) > NEAR ? .7 : 1);
+    }
+    R.clear(); R.render(bgScene, bgCam); R.clearDepth(); R.render(sc, cam);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ======================= SHOE ROOM =======================
+async function roomStage(stage) {
+  const M = META.shoes, list = ITEMS.filter(i => i.cat === 'shoe'), NP = M.plinths.length;
+  const R = makeRenderer(stage);
+  const big = R.capabilities.maxTextureSize >= 8192 && Math.min(screen.width, screen.height) > 500;
+  const pano = await tex(big ? 'plates/shoes.jpg' : 'plates/shoes_4k.jpg'); pano.generateMipmaps = true; pano.minFilter = THREE.LinearMipmapLinearFilter; pano.wrapS = THREE.RepeatWrapping;
+  const eye = b2t(M.eye);
+  const cam = new THREE.PerspectiveCamera(50, 1, .02, 80); cam.position.copy(eye); cam.rotation.order = 'YXZ';
+  const sc = new THREE.Scene();
+  const panoMat = new THREE.ShaderMaterial({ uniforms: { pano: { value: pano }, eye: { value: eye } }, side: THREE.BackSide, depthWrite: false,
+    vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform sampler2D pano; uniform vec3 eye; varying vec3 vW;
+      void main(){ vec3 d = normalize(vW - eye); float u = .5 + atan(d.z, d.x) / 6.2831853; float v = .5 + asin(clamp(d.y, -1., 1.)) / 3.1415927;
+        float u2 = fract(u + .5); vec2 gx = vec2(dFdx(u), dFdx(v)), gy = vec2(dFdy(u), dFdy(v)); vec2 gx2 = vec2(dFdx(u2), gx.y), gy2 = vec2(dFdy(u2), gy.y);
+        if (abs(gx.x) > abs(gx2.x)) gx = gx2; if (abs(gy.x) > abs(gy2.x)) gy = gy2;
+        gl_FragColor = vec4(textureGrad(pano, vec2(u, v), gx, gy).rgb, 1.0);
+        #include <colorspace_fragment>
+      }` });
+  const sky = new THREE.Mesh(new THREE.BoxGeometry(30, 30, 30), panoMat); sky.position.copy(eye); sc.add(sky);
+  // blob shadow texture
+  const c2 = document.createElement('canvas'); c2.width = c2.height = 128; const g2 = c2.getContext('2d'); const rg = g2.createRadialGradient(64, 64, 2, 64, 64, 62);
+  rg.addColorStop(0, 'rgba(0,0,0,1)'); rg.addColorStop(.45, 'rgba(0,0,0,.55)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g2.fillStyle = rg; g2.fillRect(0, 0, 128, 128);
+  const blobT = new THREE.CanvasTexture(c2);
+  const L = new THREE.Vector3(.2, .9, .45), tint = [1.0, .93, .86];
+  const P = M.plinths.map(p => b2t(p));
+  const slots = [];
+  const mats = {};
+  async function shoeMat(it) {
+    if (!mats[it.id]) {
+      const [map, dep] = await Promise.all([tex('items/' + it.id + '.webp'), tex('items/' + it.id + '_depth.png', false)]);
+      const w = it.aspect > 1.7 ? .32 : .27, h = w / it.aspect;
+      mats[it.id] = { mat: itemMaterial(map, dep, w, h, .05, L, tint, .66), geo: new THREE.PlaneGeometry(w, h, 96, Math.max(8, Math.round(96 / it.aspect))), w, h };
+    }
+    return mats[it.id];
+  }
+  for (let k = 0; k < NP; k++) {
+    const grp = new THREE.Group(); grp.position.copy(P[k]); sc.add(grp);
+    const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: blobT, transparent: true, depthWrite: false, opacity: .55 }));
+    blob.rotation.x = -Math.PI / 2; blob.position.y = .002; grp.add(blob);
+    slots.push({ k, grp, blob, mesh: null, shown: -1 });
+  }
+  await Promise.all(list.map(shoeMat));
+  stage.classList.add('ready');
+
+  let pos = 0, target = 0, W = 1, H = 1, visible = false, lastIdx = null;
+  function resize() { W = stage.clientWidth; H = stage.clientHeight; R.setSize(W, H, false); cam.aspect = W / H; cam.fov = W < H ? 52 : 40; cam.updateProjectionMatrix(); }
+  new ResizeObserver(resize).observe(stage); resize();
+  const mod = (a, n) => ((a % n) + n) % n;
+  dragger(stage, dx => { pos -= dx / (W * (W < H ? .55 : .35)); target = pos; }, (v, moved) => {
+    let t = Math.round(pos - v * 1000 / (W * .45) * .25);
+    if (!moved && stage._px != null) t = Math.round(pos) + (stage._px < .33 ? -1 : stage._px > .67 ? 1 : 0);
+    target = t;
+  });
+  stage.querySelector('.prev').onclick = () => { target = Math.round(target) - 1; stage.classList.add('touched'); };
+  stage.querySelector('.next').onclick = () => { target = Math.round(target) + 1; stage.classList.add('touched'); };
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible) loop.last = performance.now(); }, { rootMargin: '120px' }).observe(stage);
+  const loop = { last: performance.now() };
+  const ang = (k) => k * 2 * Math.PI / NP;
+  function frame(now) {
+    requestAnimationFrame(frame); if (!visible) return;
+    const dt = Math.min(.05, (now - loop.last) / 1000); loop.last = now; const t = now / 1000;
+    if (!stage.classList.contains('drag')) pos += (target - pos) * (1 - Math.exp(-dt * 5));
+    const idx = Math.round(pos);
+    if (idx !== lastIdx) { lastIdx = idx; stage._size = null; const n = mod(idx, list.length); fillCard(stage, list[n], n, list.length, null); }
+    // camera turns on the spot (the panorama was rendered from this point, so everything lines up)
+    const hov = stage._px != null && !stage.classList.contains('drag') ? (stage._px - .5) * .06 : 0;
+    cam.rotation.y = ang(pos) - Math.PI / 2 - hov; cam.rotation.x = (W < H ? -.20 : -.17) - (stage._py != null ? (stage._py - .5) * .03 : 0);
+    for (const s of slots) {
+      const j = s.k + NP * Math.round((pos - s.k) / NP), n = mod(j, list.length);
+      if (s.shown !== n) {   // swapped only while the plinth is behind the camera
+        const mm = mats[list[n].id]; if (s.mesh) s.grp.remove(s.mesh);
+        s.mesh = new THREE.Mesh(mm.geo, mm.mat); s.mesh.userData = mm; s.grp.add(s.mesh); s.shown = n;
+      }
+      const mm = s.mesh.userData, near = Math.abs(j - pos) < .5;
+      const bob = RM ? 0 : Math.sin(t * 1.1 + s.k) * .012;
+      const lift = .085 + bob;
+      s.mesh.position.set(0, lift + mm.h / 2, 0);
+      const face = Math.atan2(eye.x - s.grp.position.x, eye.z - s.grp.position.z);
+      const spin = RM ? 0 : Math.sin(t * .45 + s.k * 2) * (near ? .38 : .2);
+      s.mesh.rotation.set(0, face + spin, 0);
+      const bw = mm.w * (.9 + .1 * Math.abs(Math.cos(spin)));
+      s.blob.scale.set(bw * 1.05, Math.min(mm.w * .5, .2), 1); s.blob.rotation.z = -(face + spin);
+      s.blob.material.opacity = .62 - lift * 2.2;
+    }
+    R.clear(); R.render(sc, cam);
+  }
+  requestAnimationFrame(frame);
+}
+
+function fail(stage, e) { console.error(e); stage.classList.add('ready'); const l = stage.querySelector('.loading'); l.style.opacity = 1; l.textContent = 'This browser can’t show the 3D room'; }
+for (const st of document.querySelectorAll('.stage')) {
+  (st.dataset.kind === 'rail' ? railStage(st) : roomStage(st)).catch(e => fail(st, e));
+}
+// highlight the section in view
+const links = [...document.querySelectorAll('.nav a')];
+new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }, { rootMargin: '-45% 0px -45% 0px' })
+  .observe(document.getElementById('tops'));
+['bottoms', 'shoes'].forEach(id => document.querySelectorAll('#' + id).forEach(el => new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + id)); }, { rootMargin: '-45% 0px -45% 0px' }).observe(el)));
+</script>
