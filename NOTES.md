@@ -8,9 +8,10 @@ Goal: 27 s, 648 frames, 24 fps, 1080x1920, must look 100% filmed: laptop + phone
 Env: LEFT=none, MUGV=1..4, PCT, SPP, BORDER=x0,x1,y0,y1 (crop render), SAVE=1 (writes pk/room.blend, packed).
 render.yml.txt is the 20-job GitHub Actions render (put it at .github/workflows/render.yml on a branch called mix-video together with pk/room.blend, render.py, seg.py, post2.py, tone.py, phone.mp4, laptop.mp4). It has not run yet. Ask the owner before starting it, and remind them to make the repo private when it finishes.
 ## Open items
-1. Used-mug option: owner chooses. 1 light smudges, 2 smudges + fine scratches + worn lip (recommended), 3 adds dried drip + desk ring, 4 most worn.
+1. Used-mug option: owner chose 4 (most worn). Build with MUGV=4.
 2. Palm and finger marks: checked, good.
 3. Webcam strip: checked, made fully dark.
-4. SAVE=1, start the render, deliver.
+4. pk/room.blend built (LEFT=none MUGV=4 SAVE=1), test frames 10 and 324 from it via render.py look right (~100 s/frame on 4 cores). Next: owner says yes, then start the render and deliver.
+Note: cropped EXRs (BORDER) read as black through ffmpeg; load them in Blender instead. Full frames are fine.
 Approved, do not change: books, no plant, trackpad position, mug size, coffee traces, warm shelf light, camera move.
 Send progress images often; keep usage economical.
