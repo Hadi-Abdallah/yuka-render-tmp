@@ -1,0 +1,48 @@
+name: render
+on: {push: {branches: [mix-video]}, workflow_dispatch: {}}
+permissions: {contents: read}
+jobs:
+  blender:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - run: |
+          F=blender-5.3.0-linux-x64.tar.xz; U=https://download.blender.org/release/Blender5.3
+          curl -sSfL --retry 5 --retry-all-errors $U/blender-5.3.0.sha256 | grep $F > sum
+          for k in 1 2 3 4 5 6 7 8; do curl -sSfL -C - --retry 3 --retry-all-errors -o $F $U/$F && sha256sum -c sum && break; sleep 10; done
+          sha256sum -c sum
+      - uses: actions/upload-artifact@v4
+        with: {name: blender, path: "*.tar.xz", retention-days: 2, compression-level: 0}
+  frames:
+    needs: blender
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    strategy: {fail-fast: false, matrix: {job: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: blender}
+      - run: |
+          sudo apt-get update -q && sudo apt-get install -yq ffmpeg libxrender1 libxi6 libxkbcommon0 libgl1 libegl1 libsm6 libxxf86vm1 libxfixes3
+          for d in phone laptop; do mkdir -p $d && ffmpeg -v error -i $d.mp4 -q:v 1 -qmin 1 $d/%04d.jpg; done
+          tar xJf blender-5.3.0-linux-x64.tar.xz
+          ./blender-5.3.0-linux-x64/blender -b room.blend -P render.py -- ${{ matrix.job }} 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: "frames-${{ matrix.job }}", path: new/, retention-days: 4, compression-level: 0}
+  final:
+    needs: frames
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {pattern: frames-*, path: rend, merge-multiple: true}
+      - run: |
+          sudo apt-get update -q && sudo apt-get install -yq ffmpeg && pip install -q numpy opencv-python-headless
+          test $(ls rend/*.exr | wc -l) -eq 648
+          for k in 0 1 2 3; do python seg.py $((k*162)) $((k*162+162)) s$k.mp4 & done; wait
+          for k in 0 1 2 3; do echo "file 's$k.mp4'" >> l.txt; done
+          ffmpeg -v error -y -f concat -safe 0 -i l.txt -c copy -movflags +faststart "mix-video.mp4"
+      - uses: actions/upload-artifact@v4
+        with: {name: FINAL-VIDEO, path: "mix-video.mp4", retention-days: 30}

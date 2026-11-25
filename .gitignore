@@ -1,0 +1,8 @@
+cap24/
+sh/*.png
+!sh/shahada.png
+bk/*.png
+t/
+pk/
+assets-polyhaven/
+__pycache__/
