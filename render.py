@@ -11,5 +11,5 @@ for f in list(range(648))[job::n]:
     for k, d in (('pscreen', 'phone'), ('lscreen', 'laptop')):
         im = T[k].image; T[k].image = bpy.data.images.load(S+'%s/%04d.jpg' % (d, f+1));
         if im: bpy.data.images.remove(im)
-    for i, nd in B: nd.inputs[1].default_value = f*.21+i*2
+    for i, nd in B: nd.inputs[1].default_value = f*(6.283185307*22/648)+i*2
     t = time.time(); sc.render.filepath = p; bpy.ops.render.render(write_still=True); print('FRAME', f, round(time.time()-t, 1), flush=True)

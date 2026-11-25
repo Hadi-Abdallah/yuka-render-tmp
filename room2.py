@@ -317,7 +317,7 @@ w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; w.node_tree.node
 FPS = 24; sc.render.fps = FPS; cam = bpy.data.cameras.new('cam'); co = bpy.data.objects.new('cam', cam); sc.collection.objects.link(co); sc.camera = co
 cam.sensor_fit = 'VERTICAL'; cam.sensor_height = 36; cam.lens = 40; cam.clip_end = 200; cam.dof.use_dof = True; cam.dof.aperture_blades = 9; bpy.context.view_layer.update()
 PC = ph.matrix_world @ Vector((0, PHH/2, PT/2)); LC = lid.matrix_world @ Vector((0, by+SH/2, .0135))
-K = [(0.0, (-1.95, -9.9, 4.0), (-.40, .0, .84), .30, .95), (4.0, (-.85, -8.8, 3.35), (-.02, -.1, .84), .26, 1.05), (7.6, (.45, -7.2, 2.65), (.36, -.8, .74), .06, 1.15), (12.0, (.92, -6.1, 2.10), (.56, -1.2, .66), .0, 1.25), (16.0, (.15, -7.5, 2.75), (.12, -.4, .82), .42, 1.3), (20.5, (-.62, -7.7, 2.80), (.16, -.6, .80), .28, 1.25), (24.6, (.66, -5.8, 2.05), (.60, -1.4, .62), .0, 1.2), (28.0, (.0, -8.9, 3.3), (-.05, -.2, .84), .34, 1.0)]
+K = [(0.0, (-1.95, -9.9, 4.0), (-.40, .0, .84), .30, .95), (4.0, (-.85, -8.8, 3.35), (-.02, -.1, .84), .26, 1.05), (7.6, (.45, -7.2, 2.65), (.36, -.8, .74), .06, 1.15), (12.0, (.92, -6.1, 2.10), (.56, -1.2, .66), .0, 1.25), (16.0, (.15, -7.5, 2.75), (.12, -.4, .82), .42, 1.3), (20.5, (-.62, -7.7, 2.80), (.16, -.6, .80), .28, 1.25), (22.8, (.66, -5.8, 2.05), (.60, -1.4, .62), .0, 1.2), (27.0, (-1.95, -9.9, 4.0), (-.40, .0, .84), .30, .95)]   # loop: ends on the opening pose, at rest, so frame 648 == frame 0
 def herm(t, f):
     ts = [k[0] for k in K]; i = max(0, min(len(K)-2, sum(1 for x_ in ts if x_ <= t)-1)); h_ = ts[i+1]-ts[i]; u = max(0, min(1, (t-ts[i])/h_))
     def tg(j):
@@ -325,10 +325,15 @@ def herm(t, f):
         d0 = (f(K[j])-f(K[j-1]))/(ts[j]-ts[j-1]); d1 = (f(K[j+1])-f(K[j]))/(ts[j+1]-ts[j]); return 0 if d0*d1 <= 0 else 2*d0*d1/(d0+d1)
     return (2*u**3-3*u*u+1)*f(K[i])+(u**3-2*u*u+u)*h_*tg(i)+(-2*u**3+3*u*u)*f(K[i+1])+(u**3-u*u)*h_*tg(i+1)
 def nz1(t, s_): return noise.noise(Vector((t, s_*17.3, s_*5.1)))
-def shake(t, s_, a): return a*(nz1(t*.55, s_)*1.0+nz1(t*1.5, s_+9)*.42+nz1(t*4.3, s_+21)*.10)
+TL = 27.0; LX = 3.0   # loop length (648 frames / 24 fps) and shake crossfade at the end
+def shake0(t, s_, a): return a*(nz1(t*.55, s_)*1.0+nz1(t*1.5, s_+9)*.42+nz1(t*4.3, s_+21)*.10)
+def shake(t, s_, a):   # periodic handheld shake: the last LX seconds fade into the shake from just before t=0
+    t = t % TL; w = max(0., (t-(TL-LX))/LX); w = w*w*(3-2*w)
+    return shake0(t, s_, a) if w == 0 else ((1-w)*shake0(t, s_, a)+w*shake0(t-TL, s_, a))/math.sqrt((1-w)**2+w*w)
 def set_cam(t):
+    t = t % TL
     p = Vector([herm(t, lambda k, a=a: k[1][a]) for a in range(3)]); g = Vector([herm(t, lambda k, a=a: k[2][a]) for a in range(3)])
-    p += Vector((shake(t, 1, .10), shake(t, 2, .07), shake(t, 3, .085)+.018*math.sin(t*2*math.pi*.27)))
+    p += Vector((shake(t, 1, .10), shake(t, 2, .07), shake(t, 3, .085)+.018*math.sin(t*2*math.pi*7/TL)))
     q = (g-p).to_track_quat('-Z', 'Y').to_euler(); co.location = p; co.rotation_euler = Euler((q.x+shake(t, 4, .0065), q.y+shake(t, 5, .0075), q.z+shake(t, 6, .0065)))
     f = PC.lerp(LC, max(0, min(1, herm(t, lambda k: k[3])+shake(t, 7, .035)))); cam.dof.focus_distance = (f-p).dot((g-p).normalized()); cam.dof.aperture_fstop = herm(t, lambda k: k[4])
 NF = 648
@@ -357,4 +362,4 @@ if os.environ.get('SAVE'):
 for i in frames:
     f = OUT+'%04d.exr' % i
     if os.path.exists(f): continue
-    sc.frame_set(i); set_screen(i); [setattr(q_, 'default_value', i*.21+k_*2) for k_, q_ in enumerate(BAND)]; t0 = time.time(); sc.render.filepath = f+'.tmp.exr'; bpy.ops.render.render(write_still=True); os.replace(f+'.tmp.exr', f); print('FRAME', i, round(time.time()-t0, 1), flush=True)
+    sc.frame_set(i); set_screen(i); [setattr(q_, 'default_value', i*(2*math.pi*22/648)+k_*2) for k_, q_ in enumerate(BAND)]; t0 = time.time(); sc.render.filepath = f+'.tmp.exr'; bpy.ops.render.render(write_still=True); os.replace(f+'.tmp.exr', f); print('FRAME', i, round(time.time()-t0, 1), flush=True)
