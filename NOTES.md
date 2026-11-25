@@ -11,6 +11,7 @@ render.yml.txt is the 20-job GitHub Actions render (put it at .github/workflows/
 1. Used-mug option: owner chose 4 (most worn). Build with MUGV=4.
 2. Palm and finger marks: checked, good.
 3. Webcam strip: checked, made fully dark.
+3b. Laptop lid looked like it floated over the base (separate glowing hinge bar under the bezel). Fixed in room2.py: lid has a hinge cover going down into the base across the hinge span; old hinge bar hidden. Small gaps at the outer ends are kept (owner: those are normal).
 4. pk/room.blend built (LEFT=none MUGV=4 SAVE=1), test frames 10 and 324 from it via render.py look right (~100 s/frame on 4 cores). Next: owner says yes, then start the render and deliver.
 Note: cropped EXRs (BORDER) read as black through ffmpeg; load them in Blender instead. Full frames are fine.
 Approved, do not change: books, no plant, trackpad position, mug size, coffee traces, warm shelf light, camera move.

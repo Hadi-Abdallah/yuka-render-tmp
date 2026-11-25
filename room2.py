@@ -16,6 +16,8 @@ lid = bpy.data.objects['lid']; scr = bpy.data.objects['screen']; bpy.context.vie
 print('LAP', [(o.name, [round(v, 2) for v in o.matrix_world.translation]) for o in sc.objects if o.name.startswith(('st', 'cam'))][:8])
 def gm(n, ob): return bpy.data.objects[ob].data.materials[0]
 M_AL = gm('alu', 'base'); M_PAD = gm('pad', 'pad'); M_KEY = gm('key', 'key'); M_BEZ = gm('bezel', 'bezel'); M_WELL = gm('well', 'btnwell')
+# hinge cover: the lid's bottom runs down into the base across the hinge span, so the panel no longer floats over a separate bar (small gaps stay at the outer ends)
+bpy.data.objects['hinge'].hide_render = True; box('hingecover', 2.90, .115, .0615, (0, -.0175, -.02675), M_BEZ, .006, 2, lid, vertical_r=.035)
 random.seed(4)
 def link(me, name='o', m=None, smooth=True, parent=None, loc=(0, 0, 0)):
     o = bpy.data.objects.new(name, me); sc.collection.objects.link(o); o.location = loc
